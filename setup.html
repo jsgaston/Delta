@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setting up WickFlow Pro | Wisfli</title>
+<meta name="description" content="Install WickFlow Pro on MetaTrader 5: where to put the file, how to allow the licence address, how to write the symbol list, what every input group does and what each Journal message means.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://jsgaston.github.io/Delta/setup.html">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%2306141F'/><rect x='6' y='6' width='20' height='20' fill='%23E4EAE8'/><path d='M16 10l7 12H9z' fill='%23E0A92C'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design-kit.css">
+
+<style>
+  .keybox{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em;background:rgba(15,44,66,.07);padding:2px 7px}
+  .dark .keybox{background:rgba(220,230,236,.1)}
+  .hero.short > .wrap{grid-template-columns:1fr;padding-top:64px;padding-bottom:66px}
+  .hero.short .lede{max-width:34em}
+  table.data td.first{width:30%;font-weight:600}
+  .codeblock{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;line-height:1.8;
+    background:var(--abyss);color:#DCE6EC;padding:16px 18px;overflow-x:auto;margin:16px 0}
+  .codeblock b{color:var(--brass);font-weight:500}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="https://wisfli.com/"><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M0 0h60v40H0z" fill="#14528C"/><path d="M8 8h44v24H8z" fill="#fff"/><path d="M18 14h24v12H18z" fill="#C8322A"/></svg>WISFLI <span class="prod">/ WickFlow Pro</span></a>
+    <nav aria-label="Page">
+      <a href="index.html">Product page</a>
+      <a href="#install">Install</a>
+      <a href="#symbols">Symbol list</a>
+      <a href="#inputs">Inputs</a>
+      <a href="#trouble" class="opt">Troubleshooting</a>
+      <a href="https://api.wisfli.com/manage" class="pill">Manage licence</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero short">
+  <div class="wrap">
+    <div>
+      <p class="where"><i></i> Setup guide</p>
+      <h1 class="long">Getting WickFlow Pro running</h1>
+      <p class="lede">Ten minutes, most of it waiting for MetaTrader to restart. Two sections matter more than the rest: the one about WebRequest, which is what stops nine out of ten first runs, and the one about the symbol list, which is the only input with a syntax of its own.</p>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="head">
+      <h2>Install</h2>
+      <p>Your purchase email carries two things: the file <span class="keybox">WickFlowPro.ex5</span> and a licence key that looks like <span class="keybox">WSF-XXXX-XXXX-XXXX</span>. Keep the email; the key is not shown anywhere else.</p>
+    </div>
+
+    <ol class="steps">
+      <li>
+        <b>Put the file where MetaTrader looks</b>
+        <p>In MetaTrader: <em>File → Open Data Folder → MQL5 → Experts</em>. Drop <span class="keybox">WickFlowPro.ex5</span> there. Back in the terminal, right-click the Navigator and choose Refresh, or restart MetaTrader.</p>
+      </li>
+      <li>
+        <b>Allow the licence address</b>
+        <p><em>Tools → Options → Expert Advisors</em>. Tick <em>Allow WebRequest for listed URL</em> and add <span class="keybox">https://api.wisfli.com</span> — exactly that, no trailing slash. On a VPS this has to be done in the VPS terminal, which is a different terminal from the one on your desk. That is the step people forget.</p>
+      </li>
+      <li>
+        <b>Attach it to any chart</b>
+        <p>Any symbol, any timeframe. WickFlow Pro does not trade the chart it sits on: it trades the symbols in its list, on the timeframes in its list. The chart is only where it lives.</p>
+      </li>
+      <li>
+        <b>Paste the key and write the symbol list</b>
+        <p>Both are in the inputs. Enable algorithmic trading with the toolbar button, then read the Journal before you walk away.</p>
+      </li>
+    </ol>
+
+    <div class="caveat">
+      <h3>Check the Journal before you walk away</h3>
+      <p>On a good start you get three things: a line with the inputs it actually received, one line per symbol showing the timeframes it built, and a line per pair with its magic number. Then the licence line, which should say <span class="keybox">License active</span>.</p>
+      <p>If you see <span class="keybox">Allow WebRequest for https://api.wisfli.com</span>, go back to step two. If a symbol is missing from the list, the EA says so by name — usually a broker suffix.</p>
+    </div>
+  </div>
+</section>
+
+<section id="symbols" class="panel">
+  <div class="wrap">
+    <div class="head">
+      <h2>Writing the symbol list</h2>
+      <p>The only input with a syntax. Two shapes are accepted and the EA prints what it understood, so you can check it rather than guess.</p>
+    </div>
+
+    <div class="cols-2">
+      <div class="prose">
+        <h3>A plain list</h3>
+        <p>Symbols separated by commas. Every one of them uses the timeframes from the <em>Default timeframes</em> input.</p>
+        <div class="codeblock">Symbols&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>XAUUSD,EURUSD,USDJPY</b>
+Timeframes&nbsp;&nbsp;<b>H1,H4</b></div>
+        <p>That builds six pairs: each symbol on H1 and on H4.</p>
+
+        <h3>One entry per symbol</h3>
+        <p>Put a colon after the symbol and list its own timeframes. Separate the entries with a pipe or a semicolon.</p>
+        <div class="codeblock">Symbols&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>XAUUSD:H1,H2|USDJPY:H4</b></div>
+        <p>That builds three pairs. A symbol written without a colon still falls back to the default list, so the two shapes can be mixed.</p>
+      </div>
+      <div class="prose">
+        <h3>If your broker adds a suffix</h3>
+        <p>Many brokers name the symbol <span class="keybox">XAUUSD.m</span> or <span class="keybox">EURUSD_raw</span>. Write the plain names in the list and put the suffix in the <em>Broker suffix</em> input. The EA tries the plain name first and then the name with the suffix.</p>
+
+        <h3>Magic numbers, and why they matter</h3>
+        <p>Each timeframe gets a slot, and each pair's magic is the base plus that slot. With a base of <span class="keybox">771001</span> and the timeframes H1 and H2, the magics are 771001 and 771002. The EA prints them at startup.</p>
+        <p>You need them twice: to tell two copies of the EA apart on the same account, and because the per-symbol report groups its results by them. Write them down from the Journal rather than working them out — the slot order depends on the list.</p>
+
+        <h3>How many is too many</h3>
+        <p>Every pair means its own indicator handles and its own study. Past roughly sixty pairs the EA warns you that the tester will crawl. A handful you have actually tested beats a long list you have not.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="inputs">
+  <div class="wrap">
+    <div class="head">
+      <h2>What the inputs do</h2>
+      <p>Grouped the way they appear in the dialog. The defaults are the ones running on the Armada account; once you change them, the published figures no longer describe your setup.</p>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data">
+        <caption>Symbols and general</caption>
+        <tbody>
+          <tr><td class="first">Licence key</td><td>Your <span class="keybox">WSF-</span> key. Leave it empty in the Strategy Tester.</td></tr>
+          <tr><td class="first">Symbols</td><td>The list. See the section above.</td></tr>
+          <tr><td class="first">Broker suffix</td><td>Appended when the plain name is not found, e.g. <span class="keybox">.m</span>.</td></tr>
+          <tr><td class="first">Default timeframes</td><td>Used by any symbol written without its own.</td></tr>
+          <tr><td class="first">Allowed direction</td><td>Both, longs only or shorts only. Useful once the report tells you one side is doing all the damage.</td></tr>
+          <tr><td class="first">Reverse every signal</td><td>The control test. If the EA makes money reversed, the logic was systematically wrong rather than neutral. Leave it off in normal use.</td></tr>
+          <tr><td class="first">Magic number</td><td>The base. Each timeframe slot adds one.</td></tr>
+          <tr><td class="first">Max positions per symbol / in total</td><td>1 and 3 by default. The total cap is your protection against several correlated symbols firing at once.</td></tr>
+          <tr><td class="first">Cooldown</td><td>Bars to wait after an entry before that pair may enter again.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data">
+        <caption>Strategy</caption>
+        <tbody>
+          <tr><td class="first">Which strategy</td><td>WickFlow, price action, either of them, range, or regime. One at a time, on purpose: a blend hides which part is working.</td></tr>
+          <tr><td class="first">WickFlow group</td><td>How small the body has to be, how big the wicks, whether both wicks must qualify, and how far back the MFI extreme may be. The candle is the trigger; the MFI extreme and the SAR are the context.</td></tr>
+          <tr><td class="first">Price action group</td><td>Which of the four patterns are live, whether they must appear at a swing level, how deep a swing has to be, and whether to trade with the structure or against it.</td></tr>
+          <tr><td class="first">Range group</td><td>Bars that define the range, minimum and maximum width in ATR, how close to the edge counts as the entry zone, the target as a percentage of the width, and the bar limit that acts as the expiry.</td></tr>
+          <tr><td class="first">Regime group</td><td>Minimum state probability to act, the dead zone that decides whether a state counts as directional, whether to trade only on a state change, and whether to close when the state stops favouring the trade.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data">
+        <caption>Confirmations — each one optional, each one mandatory when on</caption>
+        <tbody>
+          <tr><td class="first">Bollinger bands</td><td>The signal candle must reach the band it is reverting from, within a tolerance given as a percentage of the band width.</td></tr>
+          <tr><td class="first">Volume</td><td>The signal candle needs a volume spike against the average of the previous bars, and optionally the highest of them.</td></tr>
+          <tr><td class="first">ADX / DMI</td><td>A ceiling so a reversal is not taken against a very strong trend, an optional floor, and a requirement that the opposing DMI line is already falling.</td></tr>
+          <tr><td class="first">Ichimoku</td><td>Off, discount (buy only below the Kijun), or trend (buy only with Tenkan above Kijun). Tenkan and Kijun only — no cloud, so there is no ambiguity about the forward shift.</td></tr>
+          <tr><td class="first">Parabolic SAR</td><td>Step and maximum, how recent the flip may be, and whether to close the position when the SAR flips against it.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data">
+        <caption>Stops, targets and management</caption>
+        <tbody>
+          <tr><td class="first">Stop loss mode</td><td>An ATR multiple, or beyond the signal candle's wick with an ATR buffer. The second is the default.</td></tr>
+          <tr><td class="first">Take profit mode</td><td>None, an ATR multiple, a multiple of the stop distance, or the next opposite swing. A structural target closer than the stop falls back to the risk multiple.</td></tr>
+          <tr><td class="first">Break-even</td><td>Trigger in R (the initial stop distance) or in ATR, and how much to lock beyond entry.</td></tr>
+          <tr><td class="first">Trailing</td><td>Off, an ATR distance, or a second Parabolic SAR with its own step. The minimum improvement before the stop is moved is there to stop it nagging the broker.</td></tr>
+          <tr><td class="first">Partial close</td><td>Take a percentage off at a trigger in R or ATR. Off by default.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data">
+        <caption>The study</caption>
+        <tbody>
+          <tr><td class="first">Bars scanned / horizon</td><td>How much history each study walks, and how many bars each signal is followed for. A longer horizon measures a slower strategy; it also means fewer signals whose horizon has fully closed.</td></tr>
+          <tr><td class="first">Refit every N bars</td><td>How often the study runs again. Lower is more responsive and slower to test.</td></tr>
+          <tr><td class="first">Minimum signals</td><td>Below this the study keeps the previous result instead of trusting a thin sample.</td></tr>
+          <tr><td class="first">Minimum expectancy</td><td>In R. A side whose out-of-sample expectancy falls below this stops trading until a later study clears it.</td></tr>
+          <tr><td class="first">Validation %</td><td>The share of the newest signals held back from choosing the settings. Half by default. Lowering it makes the chosen settings look better and mean less.</td></tr>
+          <tr><td class="first">Monte Carlo runs / percentile / confidence</td><td>How many resamples, which percentile of them the EA trusts instead of the average, and what share of them must stay above zero.</td></tr>
+          <tr><td class="first">Half-life</td><td>Bars after which an old signal counts half. Keeps the sample large while letting the recent past drive the answer.</td></tr>
+          <tr><td class="first">Blend with the inputs</td><td>0 uses your stop and target, 1 uses the learned ones, 0.5 splits the difference. It exists so one study cannot swing the EA on its own.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data">
+        <caption>Brakes and filters</caption>
+        <tbody>
+          <tr><td class="first">Drawdown brake</td><td>No new trades past this distance from the equity peak. It releases when the account recovers, or after a set number of hours — without that release it would be a trap, since a stopped EA can never earn the equity back.</td></tr>
+          <tr><td class="first">Losing-streak pause</td><td>After N losing trades in a row, pause for N bars.</td></tr>
+          <tr><td class="first">Daily loss stop</td><td>Percentage of the day's opening equity. Off by default.</td></tr>
+          <tr><td class="first">Spread</td><td>A ceiling in points, or as a percentage of ATR — the second travels between instruments, the first does not.</td></tr>
+          <tr><td class="first">Session and Friday</td><td>An optional hour window in server time, and an hour after which no new trades are opened on Friday.</td></tr>
+          <tr><td class="first">Risk per trade</td><td>A fixed lot, or a percentage of balance risked to the stop. There is no multiplier after a loss anywhere in the code.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="backtest" class="panel">
+  <div class="wrap">
+    <div class="head">
+      <h2>Backtesting</h2>
+      <p>The free build runs only here. It is the same logic as the paid one, so what you measure is what you would run.</p>
+    </div>
+
+    <div class="cols-2">
+      <div class="prose">
+        <h3>Settings that matter</h3>
+        <p>Modelling: <em>Every tick based on real ticks</em>. Anything faster will flatter a system that reads closed bars on several timeframes at once.</p>
+        <p>Spread: your broker's, or realistic. Never a fixed low value. On the faster timeframes the spread is a large part of the result, and a test at one point of spread is a test of nothing.</p>
+        <p>Pick one chart symbol and let the input list do the rest. The tester will download history for every symbol in the list, which is why the first run is slow.</p>
+        <p>The report is written to a text file as well as the Journal: <em>File → Open Data Folder</em>, go up one level to <span class="keybox">Common\Files</span>. The Journal is muted during optimisation; the file is not.</p>
+      </div>
+      <div class="prose">
+        <h3>What you cannot see in a test</h3>
+        <p>Requotes, slippage on a fast fill, and the way a spread widens around news. The tester is optimistic about all three.</p>
+        <p>The regime model is refitted forward in time during a tester run, which is the honest way to measure it. Inside a single study, older bars are scored with a model fitted later — that is why the tester run is the verdict and the study's own numbers are only a guide.</p>
+        <h3>Two runs worth doing</h3>
+        <p>One with the study off, so you see the raw strategy. One with the signals reversed, which tells you whether a flat result was neutral or systematically wrong. Both take the same time as a normal run and both are more informative than another parameter sweep.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="trouble">
+  <div class="wrap">
+    <div class="head">
+      <h2>When something goes wrong</h2>
+      <p>Almost everything the EA refuses to do, it explains in the Journal first.</p>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data">
+        <caption>Licence messages</caption>
+        <tbody>
+          <tr><td class="first">License active</td><td>Nothing to do. It rechecks every few hours.</td></tr>
+          <tr><td class="first">Enter your license key in the EA inputs</td><td>The key field is empty. Backtesting works without it; a demo or live chart does not.</td></tr>
+          <tr><td class="first">Allow WebRequest for https://api.wisfli.com</td><td>The address is not listed in <em>Tools → Options → Expert Advisors</em>. On a VPS, in the VPS terminal.</td></tr>
+          <tr><td class="first">Invalid license key</td><td>Copy it again from the purchase email. Watch for a trailing space.</td></tr>
+          <tr><td class="first">This license key belongs to a different product</td><td>A key from another Wisfli EA. Each product has its own.</td></tr>
+          <tr><td class="first">Account limit reached for this license</td><td>Three accounts already registered. Free one at <a href="https://api.wisfli.com/manage">api.wisfli.com/manage</a>.</td></tr>
+          <tr><td class="first">License expired</td><td>The subscription ended. Existing positions keep being managed; no new ones are opened.</td></tr>
+          <tr><td class="first">Cannot verify the license (no connection)</td><td>A short outage is tolerated. A long one pauses new entries only.</td></tr>
+          <tr><td class="first">Free backtest version</td><td>You attached the backtest build to a normal chart. Use the paid file there.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data">
+        <caption>Startup and runtime messages</caption>
+        <tbody>
+          <tr><td class="first">symbol '…' is not available, skipped</td><td>The name does not exist at your broker. Usually a suffix; fill the suffix input.</td></tr>
+          <tr><td class="first">'…' is not a timeframe</td><td>Use names like M15, M30, H1, H2, H4, D1.</td></tr>
+          <tr><td class="first">no timeframes of its own, it takes the default</td><td>Not an error. That symbol had no colon.</td></tr>
+          <tr><td class="first">nothing usable in '…', falling back to …</td><td>The whole list failed to resolve, so the EA is trading the chart symbol only. Fix the list.</td></tr>
+          <tr><td class="first">that is a lot of pairs, the tester will be slow</td><td>Over sixty pairs. Not an error, a warning about your evening.</td></tr>
+          <tr><td class="first">study skipped, only N signals</td><td>Not enough history yet, or the filters are too tight. The previous result is kept.</td></tr>
+          <tr><td class="first">signal skipped, the study says this side has no edge</td><td>Working as intended. That side is off until a later study clears it.</td></tr>
+          <tr><td class="first">signal skipped, adverse regime</td><td>The regime filter blocked it. The state and its probability are in the line.</td></tr>
+          <tr><td class="first">stop too close to price, trade skipped</td><td>The broker's minimum stop distance is wider than the stop the strategy wanted. Widen the ATR multiple or the buffer.</td></tr>
+          <tr><td class="first">lot size came out as 0</td><td>The risk percentage produced less than the minimum lot, or free margin is too low.</td></tr>
+          <tr><td class="first">order failed. retcode=…</td><td>The broker refused it. The description is on the same line; the usual causes are filling mode and market closed.</td></tr>
+          <tr><td class="first">drawdown brake ON</td><td>No new trades until the account recovers or the release time passes. Open positions keep being managed.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="caveat">
+      <h3>Still stuck</h3>
+      <p>Write to <a href="mailto:support@wisfli.com">support@wisfli.com</a> with the Journal lines from startup — the ones listing the pairs and the magics — and the line that describes the problem. That is almost always enough to answer without any back and forth.</p>
+      <p>Never send your licence key or your account password by email, to me or to anyone. Nothing I need to help you requires either.</p>
+    </div>
+  </div>
+</section>
+
+<div class="contact">
+  <div class="wrap">
+    <div>
+      <h2>Something unclear in this guide?</h2>
+      <p>Tell me which part and I will rewrite it.</p>
+    </div>
+    <div>
+      <a class="mail" href="mailto:support@wisfli.com">support@wisfli.com</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a class="brand" href="https://wisfli.com/"><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M0 0h60v40H0z" fill="#14528C"/><path d="M8 8h44v24H8z" fill="#fff"/><path d="M18 14h24v12H18z" fill="#C8322A"/></svg>WISFLI</a>
+        <p style="margin:0;max-width:26em">WickFlow Pro is built and supported by one person in Alicante.</p>
+      </div>
+      <div>
+        <h4>WickFlow Pro</h4>
+        <ul>
+          <li><a href="index.html">Product page</a></li>
+          <li><a href="index.html#study">The self-audit</a></li>
+          <li><a href="index.html#live">Live on Armada</a></li>
+          <li><a href="index.html#pricing">Pricing</a></li>
+          <li><a href="https://api.wisfli.com/manage">Manage your subscription</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Wisfli</h4>
+        <ul>
+          <li><a href="https://wisfli.com/">wisfli.com</a></li>
+          <li><a href="https://jsgaston.github.io/candlegrid-web-en/">CandleGrid Pro</a></li>
+          <li><a href="https://jsgaston.github.io/regimeswitch-web-en/">RegimeSwitch Pro</a></li>
+          <li><a href="https://jsgaston.github.io/Charlie/">BearStack Pro</a></li>
+          <li><a href="https://jsgaston.github.io/armada/">Armada</a></li>
+          <li><a href="mailto:support@wisfli.com">support@wisfli.com</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="legal">
+      <p>Trading foreign exchange and CFDs on margin carries a high level of risk and can result in the loss of all of your capital. Backtested and simulated results do not represent actual trading and have inherent limitations, including the benefit of hindsight. Past performance does not indicate future results. WickFlow Pro is trading software, not investment advice, and no outcome is promised or implied. Only trade with money you can afford to lose.</p>
+      <p>© <span id="yr">2026</span> Wisfli. Trading as Javier Santiago Gastón de Iriarte Cabrera, Tax ID 47033535F, Alicante, Spain.</p>
+    </div>
+  </div>
+</footer>
+
+</main>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>

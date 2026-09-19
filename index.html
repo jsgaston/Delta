@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WickFlow Pro — a multi-symbol MetaTrader 5 system that audits itself | Wisfli</title>
+<meta name="description" content="WickFlow Pro runs five selectable strategies across several symbols and timeframes from a single chart, and re-measures its own edge on history every few bars — switching off the sides and regimes that stop paying.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://jsgaston.github.io/Delta/">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="WickFlow Pro — a multi-symbol MetaTrader 5 system that audits itself">
+<meta property="og:description" content="Five strategies, many symbols, one chart. A walk-forward study runs inside the EA and turns off whatever stops working.">
+<meta property="og:url" content="https://jsgaston.github.io/Delta/">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%2306141F'/><rect x='6' y='6' width='20' height='20' fill='%23E4EAE8'/><path d='M16 10l7 12H9z' fill='%23E0A92C'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design-kit.css">
+
+<!-- ============================================================
+     PENDIENTE ANTES DE PUBLICAR
+       1. Subir WickFlowPro-Backtest.ex5 al repo (compilado con
+          #define WISFLI_BACKTEST_ONLY). El .gitignore ya lo permite.
+       2. Pegar las dos URL de Stripe (Live) en los dos .pay-slot.
+       3. Magics reales en vivo: var WICKFLOW_MAGICS (script final).
+          Ahora estan los que salen de InpMagic=771001 con dos slots.
+       4. Cifras de backtest en la seccion #tested: estan marcadas
+          como pendientes, NO publicar la pagina con el texto de
+          relleno si no hay informe.
+     ============================================================ -->
+
+<style>
+  /* Ajustes propios de esta página (el resto viene de design-kit.css) */
+  .stack{display:grid;gap:10px;padding:18px 20px 22px}
+  .stack .row{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:14px}
+  .stack .sid{font:700 13px Archivo;color:var(--brass);letter-spacing:.04em}
+  .stack .fam{font:500 14px Archivo;color:#fff}
+  .stack .pips{display:flex;gap:5px;margin-top:5px}
+  .stack .pips i{width:26px;height:6px;background:var(--drule-2);display:block}
+  .stack .pips i.on{background:var(--sig-up)}
+  .stack .pips i.off{background:var(--sig-down)}
+  .stack .min{font:500 12.5px Archivo;color:var(--dmuted);white-space:nowrap}
+  .live-note{font:400 13.5px/1.6 Archivo;color:var(--dmuted);margin:18px 0 0}
+  .live-empty{font:500 15px Archivo;color:var(--dmuted);padding:26px 0}
+  #liveChart{height:190px}
+  #liveChart svg{display:block;width:100%;height:100%}
+  .tag-demo{font:700 11px Archivo;letter-spacing:.06em;background:var(--sig-down);color:#2A0B06;padding:3px 8px}
+  .keybox{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em;background:rgba(15,44,66,.07);padding:2px 7px}
+  .dark .keybox{background:rgba(220,230,236,.1)}
+  .codeblock{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;line-height:1.75;
+    background:var(--abyss);color:#DCE6EC;padding:18px 20px;overflow-x:auto;margin:18px 0 0}
+  .codeblock b{color:var(--brass);font-weight:500}
+  .codeblock i{color:#8DA4B4;font-style:normal}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- ================= NAV ================= -->
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="https://wisfli.com/"><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M0 0h60v40H0z" fill="#14528C"/><path d="M8 8h44v24H8z" fill="#fff"/><path d="M18 14h24v12H18z" fill="#C8322A"/></svg>WISFLI <span class="prod">/ WickFlow Pro</span></a>
+    <nav aria-label="Page">
+      <a href="#how">How it works</a>
+      <a href="#study">The self-audit</a>
+      <a href="#spec">Specification</a>
+      <a href="#live">Live on Armada</a>
+      <a href="setup.html" class="opt">Setup</a>
+      <a href="#faq" class="opt">Questions</a>
+      <a href="#pricing" class="pill">Get WickFlow</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <p class="where"><i></i> Multi-symbol · MetaTrader 5 · one chart</p>
+      <h1 class="long">Five strategies.<br>One that keeps checking itself.</h1>
+      <p class="lede">WickFlow Pro trades a list of symbols and timeframes from a single chart. You pick which strategy runs — an indecision-candle reversal, a price-action engine, a range system, or a regime model that fits itself to the market. Each symbol and timeframe gets its own magic number, so the results come back separated.</p>
+      <p class="lede">What makes it different is what it does between trades. Every few bars it replays its own recent history, finds every bar where it would have fired, measures what actually happened next, and switches off the sides and the regimes that have stopped paying.</p>
+      <div class="actions">
+        <a class="btn brass" href="#pricing">Get WickFlow Pro — €39/month</a>
+        <a class="btn line" href="#study">See the self-audit</a>
+      </div>
+      <p class="aside">Or <a href="#backtest">download the free backtest build</a> and run it on your own broker's data before you decide.</p>
+    </div>
+
+    <figure class="instrument" style="margin:0">
+      <header><b>Strategy selector</b><span>one active at a time</span></header>
+      <div class="stack" aria-hidden="true">
+        <div class="row">
+          <span class="sid">W</span>
+          <span><span class="fam">WickFlow</span><span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i></span></span>
+          <span class="min">candle · MFI · SAR</span>
+        </div>
+        <div class="row">
+          <span class="sid">P</span>
+          <span><span class="fam">Price action</span><span class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></span>
+          <span class="min">4 patterns</span>
+        </div>
+        <div class="row">
+          <span class="sid">R</span>
+          <span><span class="fam">Range</span><span class="pips"><i class="on"></i><i class="off"></i></span></span>
+          <span class="min">fade or break</span>
+        </div>
+        <div class="row">
+          <span class="sid">G</span>
+          <span><span class="fam">Regime</span><span class="pips"><i class="off"></i><i class="on"></i><i class="on"></i></span></span>
+          <span class="min">HMM states</span>
+        </div>
+      </div>
+      <dl class="inst-grid">
+        <div><dt>Symbols</dt><dd>your list</dd></div>
+        <div><dt>Signal bar</dt><dd>closed only</dd></div>
+        <div><dt>Sizing</dt><dd>fixed or % risk</dd></div>
+        <div><dt>Open trades</dt><dd>capped</dd></div>
+      </dl>
+      <p class="inst-foot">Illustration of the on-chart panel. One strategy runs at a time; the study measures whichever one you chose.</p>
+    </figure>
+  </div>
+</section>
+
+<!-- ================= PRINCIPLES ================= -->
+<div class="principles">
+  <div class="wrap">
+    <div>
+      <h3>Closed bars only</h3>
+      <p>Every rule is read on the bar that has just finished. Nothing is evaluated mid-bar, so what the tester shows is what runs live.</p>
+    </div>
+    <div>
+      <h3>Fixed size, always</h3>
+      <p>Either a fixed lot or a fixed percentage of balance risked per trade. There is no grid, no averaging down and no lot multiplier after a loss — anywhere in the code.</p>
+    </div>
+    <div>
+      <h3>It can switch itself off</h3>
+      <p>If the study cannot find a positive expectancy on the recent history, that side simply stops trading until the next study says otherwise.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= HOW IT WORKS ================= -->
+<section id="how">
+  <div class="wrap">
+    <div class="head">
+      <h2>The five engines</h2>
+      <p>One input chooses which one runs. They share the same filters, the same position management and the same study, so you can compare them on the same symbol without changing anything else.</p>
+    </div>
+
+    <div class="feat-grid">
+      <figure class="art">
+        <svg viewBox="0 0 520 470" role="img" aria-label="Diagram of an indecision candle at a Money Flow Index trough with the Parabolic SAR below price">
+          <rect width="520" height="470" fill="#0F2C42"/>
+          <g stroke="rgba(214,230,240,.13)" stroke-width="1">
+            <path d="M0 80h520M0 160h520M0 240h520M0 320h520"/>
+          </g>
+
+          <!-- velas bajando -->
+          <g stroke="#E8715F" fill="#E8715F">
+            <rect x="52" y="120" width="15" height="46"/><line x1="59.5" y1="108" x2="59.5" y2="120" stroke-width="2"/><line x1="59.5" y1="166" x2="59.5" y2="178" stroke-width="2"/>
+            <rect x="88" y="156" width="15" height="50"/><line x1="95.5" y1="144" x2="95.5" y2="156" stroke-width="2"/><line x1="95.5" y1="206" x2="95.5" y2="218" stroke-width="2"/>
+            <rect x="124" y="196" width="15" height="54"/><line x1="131.5" y1="184" x2="131.5" y2="196" stroke-width="2"/><line x1="131.5" y1="250" x2="131.5" y2="262" stroke-width="2"/>
+          </g>
+
+          <!-- vela de indecision -->
+          <g>
+            <rect x="160" y="252" width="15" height="12" fill="#E4EAE8"/>
+            <line x1="167.5" y1="212" x2="167.5" y2="252" stroke="#E4EAE8" stroke-width="2"/>
+            <line x1="167.5" y1="264" x2="167.5" y2="306" stroke="#E4EAE8" stroke-width="2"/>
+            <text x="186" y="244" fill="#E4EAE8" font-family="Archivo" font-size="13" font-weight="700">Indecision candle</text>
+            <text x="186" y="262" fill="#8DA4B4" font-family="Archivo" font-size="12.5">small body, wicks on both sides</text>
+          </g>
+
+          <!-- velas subiendo -->
+          <g stroke="#45C29A" fill="#45C29A">
+            <rect x="196" y="214" width="15" height="42"/><line x1="203.5" y1="202" x2="203.5" y2="214" stroke-width="2"/><line x1="203.5" y1="256" x2="203.5" y2="266" stroke-width="2"/>
+            <rect x="232" y="176" width="15" height="46"/><line x1="239.5" y1="164" x2="239.5" y2="176" stroke-width="2"/><line x1="239.5" y1="222" x2="239.5" y2="232" stroke-width="2"/>
+            <rect x="268" y="138" width="15" height="48"/><line x1="275.5" y1="126" x2="275.5" y2="138" stroke-width="2"/><line x1="275.5" y1="186" x2="275.5" y2="196" stroke-width="2"/>
+          </g>
+
+          <!-- puntos SAR debajo -->
+          <g fill="#E0A92C">
+            <circle cx="167.5" cy="322" r="2.6"/><circle cx="203.5" cy="286" r="2.6"/>
+            <circle cx="239.5" cy="250" r="2.6"/><circle cx="275.5" cy="216" r="2.6"/>
+          </g>
+          <text x="296" y="222" fill="#E0A92C" font-family="Archivo" font-size="12.5" font-weight="600">SAR already below price</text>
+
+          <!-- entrada -->
+          <line x1="30" y1="206" x2="490" y2="206" stroke="#DCE6EC" stroke-width="1" stroke-dasharray="4 4"/>
+          <text x="392" y="198" fill="#DCE6EC" font-family="Archivo" font-size="12.5" font-weight="600">Buy at next open</text>
+
+          <!-- panel MFI -->
+          <rect x="30" y="360" width="460" height="92" fill="#06141F"/>
+          <text x="40" y="380" fill="#8DA4B4" font-family="Archivo" font-size="12">Money Flow Index</text>
+          <line x1="40" y1="432" x2="480" y2="432" stroke="rgba(224,169,44,.35)" stroke-width="1" stroke-dasharray="4 4"/>
+          <text x="440" y="428" fill="#8DA4B4" font-family="Archivo" font-size="11">35</text>
+          <path d="M44 392 L80 404 L116 420 L152 440 L188 424 L224 408 L260 396 L300 388 L340 384 L380 382 L420 386 L470 390"
+                fill="none" stroke="#45C29A" stroke-width="2"/>
+          <circle cx="152" cy="440" r="5" fill="none" stroke="#E0A92C" stroke-width="1.6"/>
+          <text x="164" y="452" fill="#E0A92C" font-family="Archivo" font-size="12" font-weight="600">trough, then turning up</text>
+        </svg>
+        <figcaption>Schematic, not a real trade. Distances are for illustration.</figcaption>
+      </figure>
+
+      <div class="feats">
+        <div>
+          <h3>WickFlow — the original</h3>
+          <p>An indecision candle (small body, wicks larger than the body), a Money Flow Index extreme a few bars earlier that has since turned, and the Parabolic SAR already on the right side. Bollinger touch, volume spike, ADX ceiling and an Ichimoku filter are each optional and each a hard requirement when switched on.</p>
+        </div>
+        <div>
+          <h3>Price action — no indicators</h3>
+          <p>Swing structure and four patterns: engulfing bar, pin bar with a liquidity sweep of the recent extreme, inside-bar breakout, and break of a swing followed by a retest. You choose whether it trades with the structure, against it at levels, or either.</p>
+        </div>
+        <div>
+          <h3>Range — the condor bet, without options</h3>
+          <p>It finds a range the market is respecting, fades each edge back towards the middle with the stop outside the range, and closes on a bar limit that plays the part of an expiry. Set it the other way and it takes the breakout instead, or let it decide by drift and ADX.</p>
+        </div>
+        <div>
+          <h3>Regime — a model, not a pattern</h3>
+          <p>A Gaussian hidden Markov model is fitted to the last few hundred bars with Baum-Welch, on two features: the bar's return and its range, both normalised so the same settings work on gold and on a currency pair. States are relabelled by mean return, so state 0 is always the most bearish. The EA takes the side the current state leans to.</p>
+        </div>
+        <div>
+          <h3>Anything that cannot be computed blocks the entry</h3>
+          <p>If an indicator buffer is not ready, or there is not enough history for the swing scan, the condition is not active and the trade does not happen. The EA never assumes a value in order to trade.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cols-3">
+      <div>
+        <h3>Before the order</h3>
+        <p>Spread ceiling in points or as a percentage of ATR, a cap per symbol and in total, a cooldown in bars since the last entry, an optional session window, a Friday cutoff and a daily loss stop.</p>
+      </div>
+      <div>
+        <h3>While the trade is open</h3>
+        <p>Stop from the ATR or from beyond the signal candle's wick, target as an ATR multiple, a risk multiple or the next opposite swing. Break-even, trailing by ATR or by a second Parabolic SAR, a partial close, and an exit when the SAR flips or the regime turns.</p>
+      </div>
+      <div>
+        <h3>When things go wrong</h3>
+        <p>A drawdown brake stops new trades past a set distance from the equity peak and releases itself after a set number of hours, so it cannot lock the account out forever. A run of losing trades pauses the EA for a number of bars.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= THE SELF-AUDIT ================= -->
+<section id="study" class="panel">
+  <div class="wrap">
+    <div class="head">
+      <h2>The part that does the arguing</h2>
+      <p>Most Expert Advisors are a fixed set of rules that keep firing whether or not they still work. WickFlow Pro carries a study that re-runs on its own history every few bars and is allowed to veto the strategy.</p>
+    </div>
+
+    <div class="cols-2">
+      <div class="prose">
+        <h3>It measures signals, not its own trades</h3>
+        <p>Waiting for the EA's closed trades would mean learning from a handful of samples. Instead the study walks back through the recent bars, asks the exact same function that decides live entries what it would have said on each one, and then measures what price actually did over the following bars. That yields hundreds of samples instead of a dozen, and because it is the same function, what gets measured is what gets traded.</p>
+
+        <h3>It chooses on one half and validates on the other</h3>
+        <p>The stop, target and trailing distances are picked by a small grid search on the older part of the sample. They are then measured on the newest part, which took no role in choosing them. This is the whole point: the best of twenty-seven combinations is high by luck almost every time, and the only way to find out is to test it on data that did not help pick it.</p>
+
+        <h3>It bootstraps what is left</h3>
+        <p>The validated results are resampled a few hundred times. The EA does not trust the average, it trusts a low percentile of those resamples, and it also needs a minimum share of them to have stayed above zero. Older signals count for less, on a half-life you set, so a strategy that worked two years ago and not since does not keep voting.</p>
+      </div>
+      <div class="prose">
+        <h3>And then it switches things off</h3>
+        <p>Longs and shorts are judged separately. If one side cannot clear the minimum expectancy with enough confidence, that side stops trading until a later study says otherwise — the other side carries on. In regime mode the same is done state by state: each hidden state gets its own out-of-sample expectancy, and the ones that do not pay are switched off individually.</p>
+
+        <h3>The control test is built in</h3>
+        <p>One input reverses every signal the EA produces. If a strategy makes money reversed, it was not neutral — it was systematically wrong, which is worth knowing before you conclude anything from a flat equity curve.</p>
+
+        <h3>And it tells you what to cut</h3>
+        <p>When the EA is removed — including at the end of a backtest — it prints three tables: results per symbol and timeframe with a first-cut verdict, how the trades ended (initial stop, break-even, target, closed by the EA), and results grouped by the regime at entry. The same tables are written to a text file in the shared folder, because the tester Journal is easy to miss.</p>
+      </div>
+    </div>
+
+    <div class="codeblock" role="img" aria-label="Example of the report the EA prints when it is removed">
+<i>==================================================================================</i>
+WickFlow per symbol report | magic base 771001 | currency EUR
+configured: 3 pairs -&gt; XAUUSD:H1,H2  USDJPY:H2
+Verdict is only a first cut: CUT = it lost money, REVIEW = thin edge or few trades.
+<i>----------------------------------------------------------------------------------</i>
+SYMBOL         TRADES    WIN%      GROSS+      GROSS-      PF        NET  VERDICT
+<b>XAUUSD H1</b>         ..      ..%         ...         ...      ...        ...  <b>KEEP</b>
+<b>XAUUSD H2</b>         ..      ..%         ...         ...      ...        ...  <b>REVIEW</b>
+<b>USDJPY H2</b>         ..      ..%         ...         ...      ...        ...  <b>CUT</b>
+<i>----------------------------------------------------------------------------------</i>
+Dropping the losing symbols in hindsight: .. symbols, .. trades, PF ..., net ...
+That line is hindsight, not a result: confirm any cut on a separate period.
+    </div>
+    <p class="hint">That last line is in the software, not just on this page. A table that tells you which symbols to drop is measuring the past; it has to be confirmed on a period it has not seen, and the EA says so where you read it.</p>
+  </div>
+</section>
+
+<!-- ================= SPEC ================= -->
+<section id="spec">
+  <div class="wrap">
+    <div class="head">
+      <h2>Specification</h2>
+      <p>Default settings as shipped. Every line is an input you can change.</p>
+    </div>
+
+    <dl class="spec">
+      <div><dt>Symbols</dt><dd>a list you write, e.g. <span class="keybox">XAUUSD:H1,H2|USDJPY:H2</span></dd></div>
+      <div><dt>Timeframes</dt><dd>per symbol, or a shared default list</dd></div>
+      <div><dt>Magic numbers</dt><dd>one per timeframe slot, from a base you set</dd></div>
+      <div><dt>Signal bar</dt><dd>closed bar of each pair's own timeframe</dd></div>
+      <div><dt>Strategies</dt><dd>WickFlow, price action, either, range, regime</dd></div>
+      <div><dt>Direction</dt><dd>both, longs only or shorts only</dd></div>
+      <div><dt>Simultaneous positions</dt><dd>1 per symbol, 3 in total</dd></div>
+      <div><dt>Cooldown between entries</dt><dd>8 bars</dd></div>
+      <div><dt>Stop loss</dt><dd>beyond the signal candle's wick, or 1.5 × ATR</dd></div>
+      <div><dt>Take profit</dt><dd>2.0 × the stop distance, or an ATR multiple, or the next swing</dd></div>
+      <div><dt>Break-even</dt><dd>at +0.30 R, locking 0.10 × ATR</dd></div>
+      <div><dt>Trailing stop</dt><dd>0.80 × ATR, from +0.20 R</dd></div>
+      <div><dt>Study window</dt><dd>800 bars, 24-bar horizon, refit every 6 bars</dd></div>
+      <div><dt>Study validation</dt><dd>50% of the newest signals held back</dd></div>
+      <div><dt>Bootstrap</dt><dd>200 resamples, 25th percentile, 60% confidence</dd></div>
+      <div><dt>Drawdown brake</dt><dd>12% off the peak, resumes at 6% or after 72 hours</dd></div>
+      <div><dt>Losing-streak pause</dt><dd>4 in a row, 12 bars</dd></div>
+      <div><dt>Position sizing</dt><dd>2.5% risk per trade, or a fixed lot</dd></div>
+      <div><dt>Platform</dt><dd>MetaTrader 5, build 3000 or newer</dd></div>
+    </dl>
+
+    <div class="caveat">
+      <h3>What WickFlow Pro is not</h3>
+      <p>It is not a signal service and not a managed account: you run it on your own terminal and you keep control of the settings. It does not promise a return.</p>
+      <p>The study is a measurement, not a guarantee. It can only describe the recent past of the symbol it is watching, and it re-measures precisely because that past stops applying. A strategy it has approved can still lose, and the drawdown brake exists because that is expected rather than hypothetical.</p>
+      <p>Running several symbols at once means several positions can be open at the same time, and correlated instruments will move together. The total cap is the control for that, and it is set to three by default for a reason.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TESTED ================= -->
+<section id="tested" class="panel">
+  <div class="wrap">
+    <div class="head">
+      <h2>Tested</h2>
+      <p>The report from the Strategy Tester is published here, with the settings and the period it was run on, so you can reproduce it rather than take it on faith.</p>
+    </div>
+    <div class="caveat">
+      <h3>Report pending publication</h3>
+      <p>This section is where the backtest goes: symbol, period, modelling quality, spread used, number of trades, profit factor, and the maximum drawdown next to the return. Until it is here, judge WickFlow Pro from the free backtest build and your own broker's data, not from anything on this page.</p>
+      <p>Backtested results do not represent actual trading and have inherent limitations, including the benefit of hindsight. Past performance does not indicate future results.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LIVE ON ARMADA ================= -->
+<section id="live" class="dark">
+  <div class="wrap">
+    <div class="head">
+      <h2>Live on Armada <span class="tag-demo" id="acctType">DEMO</span></h2>
+      <p>WickFlow Pro trades on the Wisfli Armada account alongside the other systems, where it flies the <strong>Delta</strong> flag. The numbers below are read straight from the published account file, updated every 15 minutes, and cover this bot only.</p>
+    </div>
+
+    <div class="board" id="liveBoard">
+      <div><b id="mReturn">—</b><span>Return since start</span></div>
+      <div><b id="mDD">—</b><span>Maximum drawdown</span></div>
+      <div><b id="mPF">—</b><span>Profit factor</span></div>
+      <div><b id="mTrades">—</b><span>Closed trades</span></div>
+    </div>
+
+    <div class="instrument">
+      <header><b>Equity curve</b><span id="liveRange">loading…</span></header>
+      <div class="inst-chart" id="liveChart"></div>
+      <p class="inst-foot" id="liveFoot">Indexed to 100 at the first trade. Drawdown is measured on closed trades and on daily balance, and the worse of the two is published.</p>
+    </div>
+
+    <p class="live-note" id="liveMeta">Reading <a href="https://jsgaston.github.io/armada/stats.json">stats.json</a>…</p>
+
+    <div class="caveat">
+      <h3>Read this before you read the numbers</h3>
+      <p>The Armada account is a demo account. Demo execution is more forgiving than a real one: there are no requotes, slippage is optimistic and spreads widen far more violently on live fills. Treat the figures as a record of the logic running unattended, not as a return you should expect.</p>
+      <p>The sample is short, past results do not indicate future results, and a drawdown larger than any shown here is always possible.</p>
+    </div>
+
+    <p class="live-note">The full account, with every bot, the trade list and a Monte Carlo view, is on the <a href="https://jsgaston.github.io/armada/">Armada page</a>.</p>
+  </div>
+</section>
+
+<!-- ================= LICENCE ================= -->
+<section id="licence">
+  <div class="wrap">
+    <div class="head">
+      <h2>How the licence works</h2>
+      <p>WickFlow Pro is licensed software. After payment you receive the compiled <span class="keybox">.ex5</span> by email together with a key, and the EA checks that key when it starts and while it runs.</p>
+    </div>
+
+    <div class="cols-2">
+      <div class="prose">
+        <h3>Your key</h3>
+        <p>The key looks like <span class="keybox">WSF-XXXX-XXXX-XXXX</span>. You paste it into the EA inputs. One key works on up to three MetaTrader accounts, so your demo, your live account and a backup terminal are all covered.</p>
+        <p>The check is made against <span class="keybox">api.wisfli.com</span> over HTTPS. The EA sends the key and the account number, nothing else — no trade data, no credentials, no personal information.</p>
+        <h3>Allow the address in MetaTrader</h3>
+        <p>MetaTrader blocks outbound requests unless you list the address. Open <em>Tools → Options → Expert Advisors</em>, tick <em>Allow WebRequest for listed URL</em> and add <span class="keybox">https://api.wisfli.com</span>. This is the single most common reason a first run fails.</p>
+      </div>
+      <div class="prose">
+        <h3>If you cancel</h3>
+        <p>You keep access until the end of the period you already paid for. After that the EA stops opening new positions — and only that. Existing positions are never closed for you: stops, targets, break-even, trailing, the partial close and the regime exit all keep working, so nothing is left unmanaged.</p>
+        <h3>Managing the subscription</h3>
+        <p>Everything — invoices, card changes, cancellation — is at <a href="https://api.wisfli.com/manage">api.wisfli.com/manage</a>. You cancel yourself, whenever you want, without writing to anyone.</p>
+        <h3>If something goes wrong</h3>
+        <p>Write to <a href="mailto:support@wisfli.com">support@wisfli.com</a> with the line the EA printed in the Journal. That line usually says exactly what the problem is.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRICING ================= -->
+<section id="pricing" class="panel">
+  <div class="wrap">
+    <div class="head">
+      <h2>Get WickFlow Pro</h2>
+      <p>Monthly or a single payment — the software is the same either way. VAT is included in both prices, and the invoice is issued automatically.</p>
+    </div>
+
+    <div class="plans">
+      <div class="plan pick">
+        <span class="tag">Most people start here</span>
+        <h3>Monthly</h3>
+        <p class="who">The whole system, with updates, for as long as you keep it. Cancel from your own account page whenever you want.</p>
+        <p class="price">€39 <small>/ month</small></p>
+        <p class="was">VAT included · cancel any time</p>
+        <ul>
+          <li>Compiled EA delivered by email</li>
+          <li>Licence key valid on three accounts</li>
+          <li>All five strategies, no separate tiers</li>
+          <li>Setup guide and email support</li>
+        </ul>
+        <div class="pay-slot">
+          <!-- PEGAR AQUI la URL del Payment Link de Stripe (Live), 39 EUR/mes -->
+          <a class="btn brass" href="#" rel="noopener">Subscribe — €39/month</a>
+        </div>
+      </div>
+
+      <div class="plan">
+        <h3>One payment</h3>
+        <p class="who">Same software, paid once. Worth it from roughly nine months on, if you already know you want to keep it.</p>
+        <p class="price">€349 <small>once</small></p>
+        <p class="was">VAT included · no recurring charge</p>
+        <ul>
+          <li>Everything in the monthly plan</li>
+          <li>Licence that does not expire</li>
+          <li>Updates included</li>
+          <li>Still limited to three accounts</li>
+        </ul>
+        <div class="pay-slot">
+          <!-- PEGAR AQUI la URL del Payment Link de Stripe (Live), 349 EUR pago unico -->
+          <a class="btn ghost" href="#" rel="noopener">Buy once — €349</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="caveat" id="backtest">
+      <h3>Test it first, for free</h3>
+      <p>There is a separate build of WickFlow Pro for the Strategy Tester. Same rules, same defaults, same code — it simply refuses to run anywhere except the tester, so it needs no licence key and costs nothing. Run it on your own broker's data, with your own spread and commission, and decide from that.</p>
+      <p><a class="btn ghost" href="WickFlowPro-Backtest.ex5" download>Download the backtest build</a></p>
+      <p>Put it in <em>File → Open Data Folder → MQL5 → Experts</em>, refresh the Navigator, then open the Strategy Tester and pick it there. Attached to a normal chart it will tell you, in the Journal, that it is the backtest version and stop.</p>
+    </div>
+
+    <div class="cols-3">
+      <div>
+        <h3>What you need</h3>
+        <p>MetaTrader 5 with your symbols from your broker, and a terminal that stays on. Multi-symbol from one chart means one terminal does all of it, but it has to be awake — a VPS is the sensible setup.</p>
+      </div>
+      <div>
+        <h3>One setting before you start</h3>
+        <p><span class="keybox">https://api.wisfli.com</span> allowed under Tools → Options → Expert Advisors → WebRequest. Without it the licence cannot be checked.</p>
+      </div>
+      <div>
+        <h3>And the obvious one</h3>
+        <p>Money you can afford to lose, on a broker you trust. Spread and commission are part of every result, and on the faster timeframes they are a large part.</p>
+      </div>
+    </div>
+
+    <p class="hint">Payment is handled by Stripe; Wisfli never sees your card details. The invoice is issued automatically as a PDF. Delivery is by email within a few minutes of payment — check the spam folder if it is not there.</p>
+  </div>
+</section>
+
+<!-- ================= SETUP ================= -->
+<section id="setup">
+  <div class="wrap">
+    <div class="head solo">
+      <h2>From payment to first trade</h2>
+    </div>
+    <ol class="steps">
+      <li>
+        <b>Pay and receive the files</b>
+        <p>Stripe confirms the payment and the email arrives with <span class="keybox">WickFlowPro.ex5</span> attached and your licence key.</p>
+      </li>
+      <li>
+        <b>Copy the EA into MetaTrader</b>
+        <p>In MetaTrader: <em>File → Open Data Folder → MQL5 → Experts</em>. Drop the file there and refresh the Navigator, or restart the terminal.</p>
+      </li>
+      <li>
+        <b>Allow the licence address</b>
+        <p><em>Tools → Options → Expert Advisors</em>, tick <em>Allow WebRequest for listed URL</em> and add <span class="keybox">https://api.wisfli.com</span>.</p>
+      </li>
+      <li>
+        <b>Attach it to one chart and write your symbol list</b>
+        <p>Any chart will do: the symbols come from the input, not from the chart. Paste the key, enable algorithmic trading, and check the Journal — the EA prints the pairs it built and the magic number of each one.</p>
+      </li>
+    </ol>
+    <p class="hint">The <a href="setup.html">setup guide</a> covers the symbol-list syntax, every input group, the tester settings and what each Journal message means. Run it on a demo account for a few days first: it costs nothing and it is the only way to see how your broker behaves at the hours it trades.</p>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section id="faq" class="panel">
+  <div class="wrap">
+    <div class="head">
+      <h2>Questions</h2>
+      <p>If yours is not here, write to <a href="mailto:support@wisfli.com">support@wisfli.com</a>.</p>
+    </div>
+
+    <div class="faq-list">
+      <details>
+        <summary>Can I backtest it before subscribing?</summary>
+        <p>Yes, and you should. <a href="WickFlowPro-Backtest.ex5" download>The backtest build</a> is free and needs no key. It contains the same logic as the paid version but only runs inside the Strategy Tester: on a live or demo chart it prints a line in the Journal and does nothing. Test it on your own broker's data, because the spread and commission are a large part of the result.</p>
+      </details>
+      <details>
+        <summary>How do I write the symbol list?</summary>
+        <p>Two shapes. A plain list — <span class="keybox">XAUUSD,EURUSD</span> — gives every symbol the timeframes from the default input. Or one entry per symbol with its own — <span class="keybox">XAUUSD:H1,H2|USDJPY:H4</span> — separated by a pipe or a semicolon. If your broker adds a suffix like <span class="keybox">.m</span>, put it in the suffix input and write the plain names.</p>
+      </details>
+      <details>
+        <summary>Which strategy should I run?</summary>
+        <p>Run one at a time and compare the reports. They are deliberately not blended, because a blend hides which part is working. The setup guide suggests a starting order, but the honest answer is that it depends on your symbols and your broker, and the per-symbol table exists so you can find out rather than guess.</p>
+      </details>
+      <details>
+        <summary>What does the study actually turn off?</summary>
+        <p>Longs and shorts independently, and in regime mode each hidden state independently. A side stops trading when its out-of-sample expectancy on recent signals falls below the minimum you set, or when too few of the bootstrap resamples stay above zero. It turns back on by itself when a later study clears it.</p>
+      </details>
+      <details>
+        <summary>Does the study look into the future?</summary>
+        <p>The signals it measures only use data up to the bar they fire on, and only signals whose horizon has fully closed are counted. The one honest caveat is in regime mode: inside a single study, older bars are scored with a model fitted later. That is why the Strategy Tester run is the verdict — there the model is refitted forward in time, the way it runs live.</p>
+      </details>
+      <details>
+        <summary>The EA says it cannot reach the licence server.</summary>
+        <p>Nine times out of ten the address is not allowed in MetaTrader. Add <span class="keybox">https://api.wisfli.com</span> under <em>Tools → Options → Expert Advisors → Allow WebRequest for listed URL</em>, exactly like that, with no trailing slash. If it still fails, a firewall or the VPS provider may be blocking outbound HTTPS.</p>
+      </details>
+      <details>
+        <summary>What happens to my trades if the subscription ends?</summary>
+        <p>New entries stop. Everything else continues: stop loss, take profit, break-even, trailing, the partial close, the SAR flip exit and the regime exit are all still applied, so no position is abandoned. Nothing is force-closed by the licence.</p>
+      </details>
+      <details>
+        <summary>Can I use it on more than one account?</summary>
+        <p>Yes, up to three MetaTrader accounts with the same key — typically a demo, a live account and a spare terminal. Sharing the file or the key outside your own accounts is not permitted and is the one thing that gets a licence revoked.</p>
+      </details>
+      <details>
+        <summary>Do demo accounts need a licence?</summary>
+        <p>Yes. The subscription covers the software, not the account type, so a demo chart validates the key exactly as a live one does. Only the Strategy Tester runs without a key — that is what the free backtest build is for.</p>
+      </details>
+      <details>
+        <summary>How many symbols can it handle?</summary>
+        <p>There is no hard limit, but every symbol and timeframe pair means its own indicator handles and its own study. Past roughly sixty pairs the EA warns you in the Journal that the tester will be slow. In practice a handful of pairs you have actually tested beats a long list you have not.</p>
+      </details>
+      <details>
+        <summary>Can I change the settings?</summary>
+        <p>Every parameter is exposed as an input: strategy, thresholds, stops, filters, sizing, study window, brakes. The defaults are what runs on the Armada account, so if you change them the published figures no longer describe your setup.</p>
+      </details>
+      <details>
+        <summary>Refunds</summary>
+        <p>Because the product is delivered digitally and immediately, neither plan is refundable once the file and the key have been sent. On the monthly plan you can cancel at any time and you keep access until the end of the period already paid. If the software does not work on your terminal, write in and it gets fixed or the payment gets returned.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTACT ================= -->
+<div class="contact">
+  <div class="wrap">
+    <div>
+      <h2>Questions before buying?</h2>
+      <p>Written by the person who built it, usually the same day.</p>
+    </div>
+    <div>
+      <a class="mail" href="mailto:support@wisfli.com">support@wisfli.com</a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a class="brand" href="https://wisfli.com/"><svg viewBox="0 0 60 40" aria-hidden="true"><path d="M0 0h60v40H0z" fill="#14528C"/><path d="M8 8h44v24H8z" fill="#fff"/><path d="M18 14h24v12H18z" fill="#C8322A"/></svg>WISFLI</a>
+        <p style="margin:0;max-width:26em">WickFlow Pro is built and supported by one person in Alicante.</p>
+      </div>
+      <div>
+        <h4>WickFlow Pro</h4>
+        <ul>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#study">The self-audit</a></li>
+          <li><a href="#spec">Specification</a></li>
+          <li><a href="#live">Live on Armada</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="setup.html">Setup guide</a></li>
+          <li><a href="https://api.wisfli.com/manage">Manage your subscription</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Wisfli</h4>
+        <ul>
+          <li><a href="https://wisfli.com/">wisfli.com</a></li>
+          <li><a href="https://jsgaston.github.io/candlegrid-web-en/">CandleGrid Pro</a></li>
+          <li><a href="https://jsgaston.github.io/regimeswitch-web-en/">RegimeSwitch Pro</a></li>
+          <li><a href="https://jsgaston.github.io/Charlie/">BearStack Pro</a></li>
+          <li><a href="https://jsgaston.github.io/armada/">Armada</a></li>
+          <li><a href="mailto:support@wisfli.com">support@wisfli.com</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="legal">
+      <p>Trading foreign exchange and CFDs on margin carries a high level of risk and can result in the loss of all of your capital. The results shown on this page come from a <strong>demo account</strong>; demo execution is more favourable than live execution. Backtested and simulated results do not represent actual trading and have inherent limitations, including the benefit of hindsight. Past performance does not indicate future results. WickFlow Pro is trading software, not investment advice, and no outcome is promised or implied. Only trade with money you can afford to lose.</p>
+      <p>© <span id="yr">2026</span> Wisfli. Trading as Javier Santiago Gastón de Iriarte Cabrera, Tax ID 47033535F, Alicante, Spain.</p>
+    </div>
+  </div>
+</footer>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* Magics reales de WickFlow Pro en el VPS: InpMagic base + un slot por
+     timeframe. Con InpMagic = 771001 y dos timeframes son 771001 y 771002.
+     Deja de sobra: los que no existan en stats.json se ignoran. */
+  var WICKFLOW_MAGICS = [771001, 771002, 771003, 771004];
+  var STATS_URL = 'https://jsgaston.github.io/armada/stats.json';
+
+  var yr = document.getElementById('yr');
+  if (yr) yr.textContent = new Date().getFullYear();
+
+  /* ---------- utilidades ---------- */
+  function $(id) { return document.getElementById(id); }
+
+  function fmtPct(v, digits) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    var d = (digits === undefined) ? 2 : digits;
+    return (v > 0 ? '+' : '') + Number(v).toFixed(d) + '%';
+  }
+  function fmtNum(v, digits) {
+    if (v === null || v === undefined || isNaN(v)) return '—';
+    return Number(v).toFixed(digits === undefined ? 2 : digits);
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso).slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  }
+
+  /* Interpolación monótona cúbica (Fritsch-Carlson): no inventa picos */
+  function monotonePath(pts) {
+    var n = pts.length;
+    if (n === 0) return '';
+    if (n === 1) return 'M' + pts[0][0] + ' ' + pts[0][1];
+    var i, dx = [], dy = [], m = [], slope = [];
+    for (i = 0; i < n - 1; i++) {
+      dx.push(pts[i + 1][0] - pts[i][0]);
+      dy.push(pts[i + 1][1] - pts[i][1]);
+      slope.push(dx[i] === 0 ? 0 : dy[i] / dx[i]);
+    }
+    m.push(slope[0]);
+    for (i = 1; i < n - 1; i++) {
+      if (slope[i - 1] * slope[i] <= 0) { m.push(0); }
+      else {
+        var w1 = 2 * dx[i] + dx[i - 1], w2 = dx[i] + 2 * dx[i - 1];
+        m.push((w1 + w2) / (w1 / slope[i - 1] + w2 / slope[i]));
+      }
+    }
+    m.push(slope[n - 2]);
+    var d = 'M' + pts[0][0].toFixed(2) + ' ' + pts[0][1].toFixed(2);
+    for (i = 0; i < n - 1; i++) {
+      var h = dx[i] / 3;
+      d += ' C' + (pts[i][0] + h).toFixed(2) + ' ' + (pts[i][1] + h * m[i]).toFixed(2) +
+           ' ' + (pts[i + 1][0] - h).toFixed(2) + ' ' + (pts[i + 1][1] - h * m[i + 1]).toFixed(2) +
+           ' ' + pts[i + 1][0].toFixed(2) + ' ' + pts[i + 1][1].toFixed(2);
+    }
+    return d;
+  }
+
+  function drawCurve(container, values) {
+    var W = 900, H = 190, padT = 16, padB = 22, padX = 6;
+    if (!values || values.length < 2) {
+      container.innerHTML = '<p class="live-empty">Not enough closed trades yet to draw a curve.</p>';
+      return;
+    }
+    var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+    if (max - min < 0.001) { max = min + 1; }
+    var pad = (max - min) * 0.12;
+    min -= pad; max += pad;
+    var innerW = W - padX * 2, innerH = H - padT - padB;
+    var pts = values.map(function (v, i) {
+      var x = padX + (values.length === 1 ? innerW / 2 : innerW * i / (values.length - 1));
+      var y = padT + innerH * (1 - (v - min) / (max - min));
+      return [x, y];
+    });
+    var path = monotonePath(pts);
+    var zeroY = padT + innerH * (1 - (0 - min) / (max - min));
+    var last = values[values.length - 1];
+    var stroke = last >= 0 ? '#45C29A' : '#E8715F';
+    var svg = '' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Equity curve of WickFlow Pro on the Armada account">' +
+      (zeroY >= padT && zeroY <= H - padB
+        ? '<line x1="0" y1="' + zeroY.toFixed(2) + '" x2="' + W + '" y2="' + zeroY.toFixed(2) + '" stroke="rgba(214,230,240,.26)" stroke-width="1" stroke-dasharray="5 5"/>'
+        : '') +
+      '<path d="' + path + '" fill="none" stroke="' + stroke + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+      '<circle cx="' + pts[pts.length - 1][0].toFixed(2) + '" cy="' + pts[pts.length - 1][1].toFixed(2) + '" r="3.2" fill="' + stroke + '"/>' +
+      '</svg>';
+    container.innerHTML = svg;
+  }
+
+  function hasAnyMagic(list) {
+    if (!list) return false;
+    for (var j = 0; j < WICKFLOW_MAGICS.length; j++)
+      if (list.indexOf(WICKFLOW_MAGICS[j]) !== -1) return true;
+    return false;
+  }
+
+  function pickScope(data) {
+    var scopes = (data && data.scopes) || [];
+    var i, j, s;
+    /* 1. un scope de grupo que contenga alguno de nuestros magics: es el que
+          agrupa todo WickFlow bajo la bandera Delta */
+    for (i = 0; i < scopes.length; i++) {
+      s = scopes[i];
+      if (s.kind === 'group' && hasAnyMagic(s.magics)) return s;
+    }
+    /* 2. un grupo llamado Delta o WickFlow */
+    for (i = 0; i < scopes.length; i++) {
+      s = scopes[i];
+      if (s.kind === 'group' && /delta|wickflow/i.test(s.name || '')) return s;
+    }
+    /* 3. si no hay grupo, el primer magic suelto que encaje */
+    for (i = 0; i < scopes.length; i++) {
+      s = scopes[i];
+      if (s.kind !== 'magic') continue;
+      if (hasAnyMagic(s.magics)) return s;
+      for (j = 0; j < WICKFLOW_MAGICS.length; j++)
+        if (s.id === 'm-' + WICKFLOW_MAGICS[j]) return s;
+    }
+    return null;
+  }
+
+  function noData(msg) {
+    $('liveRange').textContent = '';
+    $('liveChart').innerHTML = '<p class="live-empty">' + msg + '</p>';
+    $('liveMeta').innerHTML = 'The whole account, with every bot, is on the ' +
+      '<a href="https://jsgaston.github.io/armada/">Armada page</a>.';
+  }
+
+  function render(data) {
+    var acc = data.account || {};
+    if (acc.type) $('acctType').textContent = String(acc.type).toUpperCase();
+
+    var sc = pickScope(data);
+    if (!sc || sc.empty) {
+      noData('WickFlow Pro has not closed any trades on the Armada account yet.');
+      return;
+    }
+
+    var r = sc.returns || {}, k = sc.risk || {}, t = sc.trades || {};
+    $('mReturn').textContent = fmtPct(r.total_pct);
+    $('mDD').textContent = (k.max_drawdown_pct === null || k.max_drawdown_pct === undefined)
+      ? '—' : '-' + fmtNum(k.max_drawdown_pct) + '%';
+    $('mPF').textContent = fmtNum(t.profit_factor);
+    $('mTrades').textContent = (t.trades === null || t.trades === undefined) ? '—' : String(t.trades);
+
+    var eq = (sc.equity || []).map(function (p) { return p.v - 100; });
+    drawCurve($('liveChart'), eq);
+
+    var first = (sc.equity && sc.equity.length) ? sc.equity[0].d : null;
+    var lastd = (sc.equity && sc.equity.length) ? sc.equity[sc.equity.length - 1].d : null;
+    $('liveRange').textContent = first && lastd ? (first + ' → ' + lastd) : '';
+
+    var bits = [];
+    if (t.win_rate_pct !== null && t.win_rate_pct !== undefined) bits.push(fmtNum(t.win_rate_pct, 1) + '% winners');
+    if (r.calendar_days) bits.push(r.calendar_days + ' days live');
+    if (acc.broker) bits.push('broker: ' + acc.broker);
+    if (data.updated_utc) bits.push('updated ' + fmtDate(data.updated_utc));
+    $('liveMeta').textContent = bits.join(' · ');
+  }
+
+  function load() {
+    if (!window.fetch) { noData('Live figures need a modern browser.'); return; }
+    fetch(STATS_URL, { cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        try { render(data); }
+        catch (e) { noData('Live figures could not be read right now.'); }
+      })
+      .catch(function () {
+        noData('Live figures are not reachable right now. The Armada page has the full record.');
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', load);
+  } else {
+    load();
+  }
+})();
+</script>
+
+</body>
+</html>
+
+</body>
+</html>
